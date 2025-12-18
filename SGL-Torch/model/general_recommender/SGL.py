@@ -25,7 +25,7 @@ import scipy.sparse as sp
 from util.common import normalize_adj_matrix, ensureDir
 from util.pytorch import sp_mat_to_sp_tensor
 from reckit import randint_choice
-
+from analyze_hard_items import find_hard_items_and_export_verbose
 
 class _LightGCN(nn.Module):
     def __init__(self, num_users, num_items, embed_dim, norm_adj, n_layers):
@@ -219,6 +219,26 @@ class SGL(AbstractRecommender):
             self.lightgcn.reset_parameters(pretrain=self.pretrain_flag, dir=self.save_dir)
         else:
             self.lightgcn.reset_parameters(init_method=self.param_init)
+        # ============================================================
+        # [NEW] 1. 個性化溫度預計算 (Log-Normalization)
+        # ============================================================
+        # === Personalized Temperature (tau_u) ===
+        users_items = self.dataset.train_data.to_user_item_pairs()
+        users_np = users_items[:, 0]
+        user_degrees = np.bincount(users_np, minlength=self.num_users)
+        user_degrees = user_degrees.astype(np.float32)
+        user_degrees[user_degrees == 0] = 1.0
+        log_degrees = np.log(user_degrees)
+        min_log = log_degrees.min()
+        max_log = log_degrees.max()
+        if max_log == min_log:
+            normalized_log = np.zeros_like(log_degrees)
+        else:
+            normalized_log = (log_degrees - min_log) / (max_log - min_log)
+        self.user_temps = 0.1 + 0.4 * normalized_log
+        self.user_temps = torch.tensor(self.user_temps, dtype=torch.float32).to(self.device)
+
+        # self.optimizer = torch.optim.Adam(self.lightgcn.parameters(), lr=self.lr)
         self.optimizer = torch.optim.Adam(self.lightgcn.parameters(), lr=self.lr)
 
     @timer
@@ -302,17 +322,41 @@ class SGL(AbstractRecommender):
                     self.lightgcn.item_embeddings(bat_neg_items),
                 )
 
-                # InfoNCE Loss
+                # # InfoNCE Loss
+                # clogits_user = torch.logsumexp(ssl_logits_user / self.ssl_temp, dim=1)
+                # clogits_item = torch.logsumexp(ssl_logits_item / self.ssl_temp, dim=1)
+                # infonce_loss = torch.sum(clogits_user + clogits_item)
+
+                # # === Group Contrastive Loss ===
+                # user_embs1 = F.embedding(bat_users, F.normalize(self.lightgcn._forward_gcn(sub_graph1)[0], dim=1))
+                # user_embs2 = F.embedding(bat_users, F.normalize(self.lightgcn._forward_gcn(sub_graph2)[0], dim=1))
+                # user_group_tensor = self.user_group_tensor.to(bat_users.device)
+                # group_loss = group_contrastive_loss(user_embs1, user_embs2, bat_users, user_group_tensor, margin=0.5)
+                                # ============================================================
+                # [MODIFIED 1] InfoNCE 改回固定溫度 (維持推薦穩定性)
+                # ============================================================
+                # 使用 self.ssl_temp (全域固定)
                 clogits_user = torch.logsumexp(ssl_logits_user / self.ssl_temp, dim=1)
                 clogits_item = torch.logsumexp(ssl_logits_item / self.ssl_temp, dim=1)
                 infonce_loss = torch.sum(clogits_user + clogits_item)
-
-                # === Group Contrastive Loss ===
-                user_embs1 = F.embedding(bat_users, F.normalize(self.lightgcn._forward_gcn(sub_graph1)[0], dim=1))
-                user_embs2 = F.embedding(bat_users, F.normalize(self.lightgcn._forward_gcn(sub_graph2)[0], dim=1))
-                user_group_tensor = self.user_group_tensor.to(bat_users.device)
-                group_loss = group_contrastive_loss(user_embs1, user_embs2, bat_users, user_group_tensor, margin=0.5)
-
+                
+                # ============================================================
+                # [MODIFIED 2] Group Loss 改用 Softmax + Self-Tau (極化分群)
+                # ============================================================
+                # 取得 sub_graph1 的 embedding 並歸一化 (Cosine 必備)
+                user_embs_sub1 = F.normalize(self.lightgcn._forward_gcn(sub_graph1)[0], dim=1)
+                
+                # 取出當前 batch users 的 embedding
+                bat_user_embs = F.embedding(bat_users, user_embs_sub1)
+                
+                # 呼叫新的 Softmax Loss
+                group_loss = group_softmax_with_selftau(
+                    user_embs=bat_user_embs,
+                    user_ids=bat_users,
+                    user_group_tensor=self.user_group_tensor,
+                    user_temps=self.user_temps  # 傳入整張表的 Self-Tau
+                )
+                ######
                 # === Total Loss ===
                 alpha = 1.0     # group loss 權重
                 lambda_graph = 0.5   # 可調整 graph-level 對比的權重
@@ -485,29 +529,80 @@ class SGL(AbstractRecommender):
         return out_dir
 
     
-# === Group Contrastive Loss ===
-def group_contrastive_loss(user_embs1, user_embs2, user_ids, user_group_tensor, margin=0.5):
-    device = user_embs1.device
-    user_group_tensor = user_group_tensor.to(user_ids.device)
-    groups = user_group_tensor[user_ids]  # [batch_size]
-    sim_matrix = F.cosine_similarity(user_embs1.unsqueeze(1), user_embs2.unsqueeze(0), dim=2)  # [batch, batch]
-    batch_size = user_embs1.size(0)
-    hardest_pos = []
-    hardest_neg = []
-    for i in range(batch_size):
-        pos_mask = (groups[i] == groups) & (torch.arange(batch_size, device=device) != i)
-        neg_mask = (groups[i] != groups)
-        pos_sims = sim_matrix[i][pos_mask]
-        neg_sims = sim_matrix[i][neg_mask]
-        if pos_sims.numel() > 0:
-            hardest_pos.append(pos_sims.min())
-        else:
-            hardest_pos.append(torch.tensor(0.0, device=device))
-        if neg_sims.numel() > 0:
-            hardest_neg.append(neg_sims.max())
-        else:
-            hardest_neg.append(torch.tensor(0.0, device=device))
-    hardest_pos = torch.stack(hardest_pos)
-    hardest_neg = torch.stack(hardest_neg)
-    loss = F.relu(margin + hardest_neg - hardest_pos).mean()
-    return loss
+# # === Group Contrastive Loss ===
+# def group_contrastive_loss(user_embs1, user_embs2, user_ids, user_group_tensor, margin=0.5):
+#     device = user_embs1.device
+#     user_group_tensor = user_group_tensor.to(user_ids.device)
+#     groups = user_group_tensor[user_ids]  # [batch_size]
+#     sim_matrix = F.cosine_similarity(user_embs1.unsqueeze(1), user_embs2.unsqueeze(0), dim=2)  # [batch, batch]
+#     batch_size = user_embs1.size(0)
+#     hardest_pos = []
+#     hardest_neg = []
+#     for i in range(batch_size):
+#         pos_mask = (groups[i] == groups) & (torch.arange(batch_size, device=device) != i)
+#         neg_mask = (groups[i] != groups)
+#         pos_sims = sim_matrix[i][pos_mask]
+#         neg_sims = sim_matrix[i][neg_mask]
+#         if pos_sims.numel() > 0:
+#             hardest_pos.append(pos_sims.min())
+#         else:
+#             hardest_pos.append(torch.tensor(0.0, device=device))
+#         if neg_sims.numel() > 0:
+#             hardest_neg.append(neg_sims.max())
+#         else:
+#             hardest_neg.append(torch.tensor(0.0, device=device))
+#     hardest_pos = torch.stack(hardest_pos)
+#     hardest_neg = torch.stack(hardest_neg)
+#     loss = F.relu(margin + hardest_neg - hardest_pos).mean()
+#     return loss
+# === Group Softmax Loss with Self-Tau ===
+def group_softmax_with_selftau(user_embs, user_ids, user_group_tensor, user_temps):
+    """
+    Args:
+        user_embs: [batch_size, dim] (已 Normalize)
+        user_ids: [batch_size]
+        user_group_tensor: [num_users] (0 or 1)
+        user_temps: [num_users] (0.1 ~ 0.5)
+    """
+    device = user_embs.device
+    
+    # 1. 準備數據
+    user_group_tensor = user_group_tensor.to(device)
+    labels = user_group_tensor[user_ids]
+    # 取出對應溫度並轉為 [batch, 1] 以便廣播
+    batch_temps = user_temps[user_ids].unsqueeze(1).to(device)
+
+    # 2. 計算相似度 (Cosine Similarity)
+    # [batch, batch]
+    sim_matrix = torch.matmul(user_embs, user_embs.T)
+
+    # 3. 關鍵：除以個性化溫度 (Self-Tau)
+    # 冷門用戶 tau=0.1 -> sim 被放大 10 倍 -> Softmax 極度尖銳 -> 強制拉近同類
+    sim_matrix = sim_matrix / batch_temps
+
+    # 4. 數值穩定處理 (LogSumExp Trick)
+    sim_matrix_max, _ = torch.max(sim_matrix, dim=1, keepdim=True)
+    sim_matrix = sim_matrix - sim_matrix_max.detach()
+
+    # 5. 建立 Mask
+    batch_size = user_embs.shape[0]
+    mask_self = torch.eye(batch_size, dtype=torch.bool, device=device) # 自己
+    # 同 Group 的人 (正樣本)
+    mask_pos = labels.unsqueeze(1).eq(labels.unsqueeze(0)) & (~mask_self)
+    
+    # 6. 計算 Log Softmax
+    # 分母：所有樣本的 exp sum (除了自己)
+    exp_sim = torch.exp(sim_matrix) * (~mask_self).float()
+    log_prob_denom = torch.log(exp_sim.sum(dim=1, keepdim=True) + 1e-8)
+
+    # 分子 - 分母 = Log Probability
+    log_prob = sim_matrix - log_prob_denom
+    
+    # 7. 計算 Loss (只取正樣本部分)
+    # 避免除以 0 (若某人該 batch 沒同伴)
+    pos_counts = mask_pos.sum(dim=1)
+    pos_counts[pos_counts == 0] = 1 
+    
+    # SupCon Loss
+    loss = - (mask_pos.float() * log_prob).sum(dim=1) / pos_counts
+    return loss.mean()

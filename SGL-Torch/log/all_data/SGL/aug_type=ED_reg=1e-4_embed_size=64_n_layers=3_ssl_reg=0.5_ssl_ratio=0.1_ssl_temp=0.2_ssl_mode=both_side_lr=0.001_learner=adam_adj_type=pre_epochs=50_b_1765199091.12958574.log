@@ -1,0 +1,113 @@
+2025-12-08 21:04:51.129: my pid: 217648
+2025-12-08 21:04:51.129: model: model.general_recommender.SGL
+2025-12-08 21:04:51.129: Dataset statistics:
+Name: all_data
+The number of users: 2809
+The number of items: 45331
+The number of ratings: 85936
+Average actions of users: 30.59
+Average actions of items: 1.90
+The sparsity of the dataset: 99.932512%
+
+The number of training: 85936
+The number of validation: 0
+The number of testing: 0
+2025-12-08 21:04:51.129: NeuRec:[NeuRec]:
+recommender=SGL
+dataset=all_data
+file_column=UI
+sep=','
+gpu_id=0
+gpu_mem=0.99
+metric=["Precision", "Recall", "NDCG"]
+top_k=[20]
+test_thread=8
+test_batch_size=128
+seed=2021
+start_testing_epoch=0
+
+SGL:[hyperparameters]:
+aug_type=ED
+reg=1e-4
+embed_size=64
+n_layers=3
+ssl_reg=0.5
+ssl_ratio=0.1
+ssl_temp=0.2
+ssl_mode=both_side
+lr=0.001
+learner=adam
+adj_type=pre
+epochs=50
+batch_size=2048
+num_negatives=1
+param_init=xavier_uniform
+stddev=0.01
+verbose=1
+stop_cnt=100
+pretrain_flag=0
+save_flag=0
+
+Command line:
+recommender=SGL
+dataset=all_data
+aug_type=ED
+reg=1e-4
+n_layers=3
+ssl_reg=0.5
+ssl_ratio=0.1
+ssl_temp=0.2
+2025-12-08 21:04:53.845: [iter 1 : loss = 457504.9062, bpr = 59500.9062, reg = 0.2201, time = 1.8728]
+2025-12-08 21:04:55.536: [iter 2 : loss = 453233.8438, bpr = 59462.6523, reg = 0.2370, time = 1.6884]
+2025-12-08 21:04:57.187: [iter 3 : loss = 451140.6562, bpr = 59426.9961, reg = 0.2520, time = 1.6497]
+2025-12-08 21:04:58.769: [iter 4 : loss = 449984.5000, bpr = 59397.8828, reg = 0.2639, time = 1.5786]
+2025-12-08 21:05:00.456: [iter 5 : loss = 449024.4062, bpr = 59372.3672, reg = 0.2741, time = 1.6855]
+2025-12-08 21:05:02.019: [iter 6 : loss = 448559.5312, bpr = 59352.2539, reg = 0.2840, time = 1.5607]
+2025-12-08 21:05:03.659: [iter 7 : loss = 448204.6562, bpr = 59333.0078, reg = 0.2941, time = 1.6387]
+2025-12-08 21:05:05.312: [iter 8 : loss = 447799.6875, bpr = 59313.2109, reg = 0.3055, time = 1.6513]
+2025-12-08 21:05:06.875: [iter 9 : loss = 447565.9688, bpr = 59294.3945, reg = 0.3180, time = 1.5613]
+2025-12-08 21:05:08.496: [iter 10 : loss = 447500.3750, bpr = 59274.1602, reg = 0.3316, time = 1.6193]
+2025-12-08 21:05:10.077: [iter 11 : loss = 447335.3750, bpr = 59257.5039, reg = 0.3447, time = 1.5794]
+2025-12-08 21:05:11.754: [iter 12 : loss = 447033.4688, bpr = 59237.6016, reg = 0.3599, time = 1.6749]
+2025-12-08 21:05:13.326: [iter 13 : loss = 446942.0625, bpr = 59218.9727, reg = 0.3748, time = 1.5692]
+2025-12-08 21:05:14.953: [iter 14 : loss = 446810.0000, bpr = 59197.3359, reg = 0.3915, time = 1.6253]
+2025-12-08 21:05:16.602: [iter 15 : loss = 446745.0312, bpr = 59177.0625, reg = 0.4081, time = 1.6471]
+2025-12-08 21:05:18.144: [iter 16 : loss = 446704.8125, bpr = 59154.8438, reg = 0.4272, time = 1.5403]
+2025-12-08 21:05:19.747: [iter 17 : loss = 446586.3438, bpr = 59127.8281, reg = 0.4466, time = 1.6020]
+2025-12-08 21:05:21.314: [iter 18 : loss = 446446.0938, bpr = 59098.5312, reg = 0.4654, time = 1.5655]
+2025-12-08 21:05:22.976: [iter 19 : loss = 446389.6562, bpr = 59069.6133, reg = 0.4894, time = 1.6608]
+2025-12-08 21:05:24.688: [iter 20 : loss = 446253.5000, bpr = 59030.9180, reg = 0.5153, time = 1.7101]
+2025-12-08 21:05:26.244: [iter 21 : loss = 446278.2188, bpr = 59001.1602, reg = 0.5371, time = 1.5539]
+2025-12-08 21:05:27.831: [iter 22 : loss = 446295.4688, bpr = 58962.4258, reg = 0.5642, time = 1.5866]
+2025-12-08 21:05:29.366: [iter 23 : loss = 446111.4688, bpr = 58913.4727, reg = 0.5964, time = 1.5337]
+2025-12-08 21:05:30.956: [iter 24 : loss = 446079.6250, bpr = 58877.3164, reg = 0.6230, time = 1.5889]
+2025-12-08 21:05:32.481: [iter 25 : loss = 445882.1250, bpr = 58809.4336, reg = 0.6646, time = 1.5230]
+2025-12-08 21:05:34.088: [iter 26 : loss = 445887.7812, bpr = 58775.1250, reg = 0.6927, time = 1.6064]
+2025-12-08 21:05:35.720: [iter 27 : loss = 445843.4062, bpr = 58708.8516, reg = 0.7328, time = 1.6301]
+2025-12-08 21:05:37.277: [iter 28 : loss = 445606.3125, bpr = 58670.4336, reg = 0.7665, time = 1.5549]
+2025-12-08 21:05:38.878: [iter 29 : loss = 445555.5625, bpr = 58584.5508, reg = 0.8141, time = 1.6002]
+2025-12-08 21:05:40.404: [iter 30 : loss = 445522.2188, bpr = 58503.8477, reg = 0.8658, time = 1.5238]
+2025-12-08 21:05:41.990: [iter 31 : loss = 445538.7188, bpr = 58444.2383, reg = 0.9109, time = 1.5857]
+2025-12-08 21:05:43.574: [iter 32 : loss = 445328.8125, bpr = 58335.4727, reg = 0.9723, time = 1.5831]
+2025-12-08 21:05:45.101: [iter 33 : loss = 445243.5000, bpr = 58276.5234, reg = 1.0170, time = 1.5254]
+2025-12-08 21:05:46.685: [iter 34 : loss = 445090.1875, bpr = 58140.3867, reg = 1.1002, time = 1.5829]
+2025-12-08 21:05:48.220: [iter 35 : loss = 445076.2188, bpr = 58050.5547, reg = 1.1625, time = 1.5334]
+2025-12-08 21:05:49.811: [iter 36 : loss = 444958.0312, bpr = 57928.7070, reg = 1.2432, time = 1.5894]
+2025-12-08 21:05:51.339: [iter 37 : loss = 444832.5938, bpr = 57814.2812, reg = 1.3174, time = 1.5267]
+2025-12-08 21:05:52.927: [iter 38 : loss = 444598.0000, bpr = 57623.1758, reg = 1.4364, time = 1.5877]
+2025-12-08 21:05:54.528: [iter 39 : loss = 444685.6875, bpr = 57502.0078, reg = 1.5202, time = 1.5999]
+2025-12-08 21:05:56.055: [iter 40 : loss = 444341.1875, bpr = 57325.2969, reg = 1.6277, time = 1.5253]
+2025-12-08 21:05:57.648: [iter 41 : loss = 444241.2500, bpr = 57104.5078, reg = 1.7765, time = 1.5922]
+2025-12-08 21:05:59.179: [iter 42 : loss = 444094.3438, bpr = 56951.2695, reg = 1.8937, time = 1.5289]
+2025-12-08 21:06:00.763: [iter 43 : loss = 443789.0938, bpr = 56750.9883, reg = 2.0271, time = 1.5833]
+2025-12-08 21:06:02.290: [iter 44 : loss = 443669.0000, bpr = 56509.5312, reg = 2.1796, time = 1.5258]
+2025-12-08 21:06:03.879: [iter 45 : loss = 443455.0625, bpr = 56263.3789, reg = 2.3596, time = 1.5881]
+2025-12-08 21:06:05.467: [iter 46 : loss = 443195.4688, bpr = 56024.6875, reg = 2.5359, time = 1.5864]
+2025-12-08 21:06:07.003: [iter 47 : loss = 442954.3750, bpr = 55691.9062, reg = 2.7556, time = 1.5341]
+2025-12-08 21:06:08.591: [iter 48 : loss = 442611.4375, bpr = 55404.2344, reg = 2.9788, time = 1.5875]
+2025-12-08 21:06:10.124: [iter 49 : loss = 442375.0938, bpr = 55131.2305, reg = 3.1630, time = 1.5318]
+2025-12-08 21:06:11.714: [iter 50 : loss = 442071.6250, bpr = 54785.7227, reg = 3.4243, time = 1.5886]
+2025-12-08 21:06:11.714: best_result@epoch 0:
+
+2025-12-08 21:06:11.714: training finished without evaluation
+2025-12-08 21:06:11.771: export_final_embeddings done: /mnt/sda1/sherry/BiGNAS/SGL-BiGNAS-new/SGL-Torch/dataset/all_data/pretrain-embeddings/SGL/final/
