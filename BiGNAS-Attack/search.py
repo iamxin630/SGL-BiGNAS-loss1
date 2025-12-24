@@ -305,7 +305,7 @@ if __name__ == "__main__":
 
     # SGL embedding
     parser.add_argument("--sgl-dir-target", type=str,
-        default="/mnt/sda1/sherry/BiGNAS/xin-BiGNAS-embbase-final/BiGNAS-Attack/logs/sgl_emb")
+        default="/mnt/sda1/yuxin/SGL-BiGNAS-new/BiGNAS-Attack/logs/sgl_emb")
 
     args = parser.parse_args()
     search(args)

@@ -4,6 +4,7 @@ __email__ = "zhongchuansun@gmail.com"
 __all__ = ["typeassert", "timer"]
 
 import time
+import numpy as np
 from inspect import signature
 from functools import wraps
 from collections.abc import Iterable
@@ -31,6 +32,9 @@ def typeassert(*type_args, **type_kwargs):
 
                     types = tuple([t for t in types if t is not None])
                     if not isinstance(value, types):
+                        if (int in types and isinstance(value, np.integer)) or \
+                           (float in types and isinstance(value, np.floating)):
+                            continue
                         raise TypeError('Argument {} must be {}'.format(name, bound_types[name]))
             return func(*args, **kwargs)
         return wrapper
