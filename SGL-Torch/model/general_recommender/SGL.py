@@ -205,7 +205,7 @@ class SGL(AbstractRecommender):
 
 
         # === 指定 Group A: 買過 target item 的 users ===
-        group_a_ids = [50, 98, 119, 191, 260, 550, 735, 946, 1175, 1615]
+        group_a_ids = [50, 99, 119, 191, 260, 550, 735, 946, 1175, 1615]
         self.user_group_tensor = torch.zeros(self.num_users, dtype=torch.long)
         self.user_group_tensor[group_a_ids] = 1  # 1: Group A, 0: 其他
 
@@ -433,7 +433,7 @@ class SGL(AbstractRecommender):
         try:
             print("\n\n================= Hard User / Hard Item Analysis =================")
             # 1️⃣ 定義 Group A
-            groupA_ids = [50, 98, 119, 191, 260, 550, 735, 946, 1175, 1615]
+            groupA_ids = [50, 99, 119, 191, 260, 550, 735, 946, 1175, 1615]
 
             # 2️⃣ 計算 Hard Users（根據 cosine distance）
             with torch.no_grad():
